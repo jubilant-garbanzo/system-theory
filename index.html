@@ -82,7 +82,7 @@
         }
 
         function addPoint(set) {
-            const cx = set === 'A' ? 600 : window.innerWidth - 600;
+            const cx = set === 'A' ? window.innerWidth * 0.25 : window.innerWidth * 0.75;
             const cy = 100 + (set === 'A' ? pointsA.length : pointsB.length) * 60;
             const label = (set === 'A' ? 'x' : 'y') + (set === 'A' ? pointsA.length : pointsB.length);
 
