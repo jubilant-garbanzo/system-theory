@@ -122,7 +122,7 @@ checkBtn.onclick = () => {
 nextBtn.onclick = drawQuiz;
 
 backBtn.onclick = () => {
-  window.location.href = "index.html";
+  window.location.href = "maps.html";
 };
 
 drawQuiz();

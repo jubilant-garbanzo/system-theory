@@ -1,234 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Визуализация соответствий</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
-        svg {
-            width: 100vw;
-            height: 80vh;
-            border: 1px solid #ccc;
-        }
-        .circle {
-            fill: #4f46e5;
-            cursor: pointer;
-        }
-        .label {
-            fill: white;
-            font-size: 12px;
-            pointer-events: none;
-        }
-        #status-label {
-            margin-top: 0;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        #status {
-            font-size: 24px;
-            font-weight: bold;
-            padding: 5px;
-            margin-bottom: 10px;
-        }
-        button {
-            margin: 5px;
-            padding: 10px 15px;
-            font-size: 16px;
-        }
-        #instructions {
-            font-size: 14px;
-            color: gray;
-            margin-bottom: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Теория систем — Главная</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    h1 {
+      margin-bottom: 50px;
+      font-weight: 700;
+      font-size: 2.5rem;
+      color: #333;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(2, 200px);
+      grid-gap: 60px; 
+    }
+    .square-link {
+      width: 200px;
+      height: 200px;
+      background: #4a90e2;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      border-radius: 12px;
+      text-decoration: none;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transition: background 0.3s ease;
+      cursor: pointer;
+      user-select: none;
+      text-align: center;
+      padding: 20px;
+    }
+    .square-link:hover {
+      background: #357abd;
+    }
+  </style>
 </head>
 <body>
-    <h1>Визуализация соответствий</h1>
-    <div id="status-label">Характеристики соответствия:</div>
-    <div id="status">(пока нет связей)</div>
-
-    <div>
-        <button onclick="addPoint('A')">Добавить в X (область отправления)</button>
-        <button onclick="addPoint('B')">Добавить в Y (область прибытия)</button>
-        <button onclick="toggleConnectMode()">Связать элементы</button>
-        <button onclick="toggleDeleteMode()">Удалить связь</button>
-        <button id="deleteSelectedBtn" onclick="deleteSelectedConnection()" style="display: none;">Удалить выбранную связь</button>
-        <a href="quiz.html">
-            <button>Задачи</button>
-        </a>
-
-    </div>
-    <div id="instructions"></div>
-    <svg id="canvas"></svg>
-
-    <script>
-        const svg = document.getElementById('canvas');
-        let pointsA = [], pointsB = [], connections = [];
-        let mode = 'connect';
-        let selectedPoint = null;
-        let selectedLine = null;
-
-        function setInstruction(text) {
-            document.getElementById('instructions').textContent = text;
-        }
-
-        function clearSelectedLine() {
-            if (selectedLine) {
-                selectedLine.line.setAttribute('stroke', 'black');
-                selectedLine = null;
-            }
-            document.getElementById('deleteSelectedBtn').style.display = 'none';
-        }
-
-        function addPoint(set) {
-            const cx = set === 'A' ? window.innerWidth * 0.25 : window.innerWidth * 0.75;
-            const cy = 100 + (set === 'A' ? pointsA.length : pointsB.length) * 60;
-            const label = (set === 'A' ? 'x' : 'y') + (set === 'A' ? pointsA.length : pointsB.length);
-
-            const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            group.setAttribute('data-set', set);
-            group.setAttribute('data-label', label);
-
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute('cx', cx);
-            circle.setAttribute('cy', cy);
-            circle.setAttribute('r', 20);
-            circle.setAttribute('class', 'circle');
-
-            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute('x', cx);
-            text.setAttribute('y', cy + 5);
-            text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('class', 'label');
-            text.textContent = label;
-
-            group.appendChild(circle);
-            group.appendChild(text);
-            group.addEventListener('click', () => handlePointClick(group));
-            svg.appendChild(group);
-
-            const point = { label, group, cx, cy };
-            (set === 'A' ? pointsA : pointsB).push(point);
-        }
-
-        function toggleConnectMode() {
-            mode = 'connect';
-            selectedPoint = null;
-            clearSelectedLine();
-            setInstruction("Кликните по элементу из X, затем по элементу из Y, чтобы связать их.");
-        }
-
-        function toggleDeleteMode() {
-            mode = 'delete';
-            selectedPoint = null;
-            clearSelectedLine();
-            setInstruction("Кликните по связи, чтобы выделить её. Затем нажмите кнопку 'Удалить выбранную связь'.");
-        }
-
-        function handlePointClick(group) {
-            if (mode !== 'connect') return;
-            const set = group.getAttribute('data-set');
-            const label = group.getAttribute('data-label');
-
-            if (!selectedPoint && set === 'A') {
-                selectedPoint = { set, label, group };
-            } else if (selectedPoint && set === 'B') {
-                drawConnection(selectedPoint, { set, label, group });
-                selectedPoint = null;
-            }
-        }
-
-        function drawConnection(from, to) {
-            const fromCircle = from.group.querySelector('circle');
-            const toCircle = to.group.querySelector('circle');
-            const x1 = +fromCircle.getAttribute('cx');
-            const y1 = +fromCircle.getAttribute('cy');
-            const x2 = +toCircle.getAttribute('cx');
-            const y2 = +toCircle.getAttribute('cy');
-
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute('x1', x1);
-            line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2);
-            line.setAttribute('y2', y2);
-            line.setAttribute('stroke', 'black');
-            line.setAttribute('stroke-width', 4);
-            line.style.cursor = 'pointer';
-
-            line.addEventListener('click', () => {
-                if (mode === 'delete') {
-                    selectLine(line, from.label, to.label);
-                }
-            });
-
-            svg.insertBefore(line, svg.firstChild);
-            connections.push({ from: from.label, to: to.label, line });
-            updateStatus();
-        }
-
-        function selectLine(line, fromLabel, toLabel) {
-            clearSelectedLine();
-            selectedLine = connections.find(c => c.from === fromLabel && c.to === toLabel);
-            if (selectedLine) {
-                selectedLine.line.setAttribute('stroke', 'red');
-                document.getElementById('deleteSelectedBtn').style.display = 'inline-block';
-            }
-        }
-
-        function deleteSelectedConnection() {
-            if (!selectedLine) return;
-            svg.removeChild(selectedLine.line);
-            connections = connections.filter(c => !(c.from === selectedLine.from && c.to === selectedLine.to));
-            clearSelectedLine();
-            updateStatus();
-        }
-
-        function updateStatus() {
-            const fromSet = new Set();
-            const toSet = new Set();
-            const fromCounts = {};
-            const toCounts = {};
-
-            for (const c of connections) {
-                fromSet.add(c.from);
-                toSet.add(c.to);
-                fromCounts[c.from] = (fromCounts[c.from] || 0) + 1;
-                toCounts[c.to] = (toCounts[c.to] || 0) + 1;
-            }
-
-            const isDefinedEverywhere = fromSet.size === pointsA.length;
-            const isSurjective = toSet.size === pointsB.length;
-            const isFunctional = Object.values(fromCounts).every(count => count === 1);
-            const isInjective = Object.values(toCounts).every(count => count === 1);
-
-            const status = document.getElementById('status');
-
-            let result = [];
-            if (isDefinedEverywhere) result.push("всюду определено");
-            else result.push("частично определено");
-
-            if (isSurjective) result.push("сюръективно (накрывающее)");
-            if (isFunctional) result.push("функционально");
-            if (isInjective) result.push("инъективно");
-
-            if (isDefinedEverywhere && isSurjective && isFunctional && isInjective) {
-                result.push("↪ Взаимно-однозначное соответствие (биекция)");
-            }
-
-            if (connections.length === 0) {
-                status.textContent = "(пока нет связей)";
-            } else {
-                status.textContent = result.join(", ");
-            }
-        }
-
-        // начальная инструкция
-        toggleConnectMode();
-    </script>
+  <h1>Теория систем</h1>
+  <div class="container">
+    <a href="maps.html" class="square-link">Соответствия</a>
+    <a href="sets.html" class="square-link">Множества</a>
+  </div>
 </body>
 </html>
