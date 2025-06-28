@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Задачи на отображения</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+    }
+    .question {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .answers label {
+      display: block;
+      margin: 5px 0;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 1em;
+    }
+    .result {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Задача по отображениям</h1>
+  <canvas id="quizCanvas" width="800" height="400"></canvas>
+
+  <div class="question">Какой тип соответствия изображён?</div>
+  <div class="answers" id="answers"></div>
+  <button id="checkBtn">Проверить</button>
+  <div class="result" id="result"></div>
+  <button id="nextBtn" style="display:none;">Следующая задача</button>
+  <button id="backBtn">На главную</button>
+
+  <script src="quiz.js"></script>
+</body>
+</html>
