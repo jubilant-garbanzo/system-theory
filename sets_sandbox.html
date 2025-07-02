@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Песочница множеств</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+    }
+    svg {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+    }
+    .input-block {
+      margin-top: 20px;
+    }
+    .element {
+      font-size: 20px;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .highlighted {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Визуализация операций над множествами</h2>
+
+  <div class="input-block">
+    <input type="text" id="elementInput" placeholder="Введите элемент">
+    <button onclick="addToSet('A')">Добавить в A</button>
+    <button onclick="addToSet('B')">Добавить в B</button>
+  </div>
+
+  <div class="input-block">
+    <button onclick="applyOperation('union')">A ∪ B</button>
+    <button onclick="applyOperation('intersection')">A ∩ B</button>
+    <button onclick="applyOperation('diffAB')">A \ B</button>
+    <button onclick="applyOperation('diffBA')">B \ A</button>
+    <button onclick="applyOperation('symdiff')">A △ B</button>
+  </div>
+
+  <svg id="venn" width="700" height="500"></svg>
+
+  <script>
+    const setA = new Set();
+    const setB = new Set();
+    const positions = {}; // сохраняем позиции элементов
+    let intersectionOffsetY = 200;
+
+    const svg = document.getElementById("venn");
+
+    function randomInCircle(cx, cy, r) {
+      let angle = 2 * Math.PI * Math.random();
+      let radius = r * Math.sqrt(Math.random());
+      return {
+        x: cx + radius * Math.cos(angle),
+        y: cy + radius * Math.sin(angle)
+      };
+    }
+
+    function assignPosition(el) {
+      const inA = setA.has(el);
+      const inB = setB.has(el);
+
+      if (inA && inB) {
+        const y = intersectionOffsetY;
+        intersectionOffsetY += 25;
+        positions[el] = { x: 350, y };
+      } else if (inA) {
+        positions[el] = randomInCircle(230, 250, 100);
+      } else if (inB) {
+        positions[el] = randomInCircle(470, 250, 100);
+      }
+    }
+
+    function drawVenn(resultSet = null) {
+      svg.innerHTML = '';
+
+      svg.innerHTML += `
+        <circle cx="230" cy="250" r="140" fill="lightblue" fill-opacity="0.5" stroke="black" />
+        <circle cx="470" cy="250" r="140" fill="lightgreen" fill-opacity="0.5" stroke="black" />
+        <text x="230" y="70">A</text>
+        <text x="470" y="70">B</text>
+      `;
+
+      const union = new Set([...setA, ...setB]);
+
+      union.forEach((el) => {
+        const inA = setA.has(el);
+        const inB = setB.has(el);
+
+        if (!positions[el] || (inA && inB && positions[el].x !== 350)) {
+          assignPosition(el);
+        }
+
+        const {x, y} = positions[el];
+        const isHighlighted = resultSet && resultSet.has(el);
+        const color = isHighlighted ? 'black' : '#aaa';
+        const weightClass = isHighlighted ? 'highlighted' : '';
+
+        svg.innerHTML += `
+          <text x="${x}" y="${y}" class="element ${weightClass}" fill="${color}">${el}</text>
+        `;
+      });
+    }
+
+    function addToSet(setName) {
+      const input = document.getElementById("elementInput");
+      const value = input.value.trim();
+      if (value === '') return;
+
+      if (setName === 'A') setA.add(value);
+      else if (setName === 'B') setB.add(value);
+
+      assignPosition(value);
+      input.value = '';
+      drawVenn();
+    }
+
+    function applyOperation(type) {
+      let result = new Set();
+      if (type === 'union') {
+        result = new Set([...setA, ...setB]);
+      } else if (type === 'intersection') {
+        result = new Set([...setA].filter(x => setB.has(x)));
+      } else if (type === 'diffAB') {
+        result = new Set([...setA].filter(x => !setB.has(x)));
+      } else if (type === 'diffBA') {
+        result = new Set([...setB].filter(x => !setA.has(x)));
+      } else if (type === 'symdiff') {
+        const onlyA = [...setA].filter(x => !setB.has(x));
+        const onlyB = [...setB].filter(x => !setA.has(x));
+        result = new Set([...onlyA, ...onlyB]);
+      }
+      drawVenn(result);
+    }
+
+    drawVenn();
+  </script>
+</body>
+</html>
