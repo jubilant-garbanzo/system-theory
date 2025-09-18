@@ -1,0 +1,225 @@
+<!-- Полный исправленный файл (замени им текущий) -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Неориентированный граф</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; background: #f9fafb; color: #222; }
+    h1 { font-size: 28px; margin-bottom: 5px; }
+    p { color: #555; }
+    .container { display: flex; gap: 20px; margin-top: 20px; }
+    .canvas {
+      position: relative; width: 600px; height: 400px;
+      background: white; border: 1px solid #ddd; border-radius: 12px;
+      cursor: crosshair; overflow: hidden;
+    }
+    .vertex {
+      position: absolute; width: 32px; height: 32px;
+      background: #3b82f6; color: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: grab; font-size: 14px; user-select: none;
+    }
+    .vertex:active { cursor: grabbing; }
+    .sidebar { width: 220px; display: flex; flex-direction: column; gap: 16px; }
+    .card { background: white; border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+    button {
+      padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer;
+      background: #2563eb; color: white; font-size: 14px;
+    }
+    button:hover { background: #1e40af; }
+    .definition { margin-top: 20px; }
+    .definition-box { margin-top: 10px; padding: 12px; background: #f3f4f6; border: 1px solid #ddd; border-radius: 10px; }
+    line { stroke: black; stroke-width: 2px; }
+  </style>
+</head>
+<body>
+
+  <h1>Неориентированный граф</h1>
+  <p>👉 Кликни по полю, чтобы добавить вершину. Нажми «Добавить ребро», а затем выбери две вершины.  
+     ➡️ Вершины можно перетаскивать мышкой.</p>
+
+  <div class="container">
+    <div class="canvas" id="canvas">
+      <svg id="edges" width="600" height="400" style="position:absolute;top:0;left:0;z-index:0;"></svg>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <h2>Множество X (вершины)</h2>
+        <ul id="verticesList"></ul>
+      </div>
+      <div class="card">
+        <h2>Множество E (рёбра)</h2>
+        <ul id="edgesList"></ul>
+      </div>
+      <button id="addEdgeBtn">Добавить ребро</button>
+    </div>
+  </div>
+
+  <div class="definition">
+    <button id="toggleDefBtn">Показать формальное определение</button>
+    <div class="definition-box" id="definitionBox" style="display:none;">
+      <p><strong>Определение.</strong> Неориентированным графом G называется упорядоченная пара множеств
+        G = (X, E), где X — непустое множество вершин X = {x1, x2, ..., xn}, n ∈ N,
+        а элементами множества E является подмножество всех возможных неупорядоченных пар элементов множества X,
+        т. е. E ⊆ {αk = (xi, xj) | xi, xj ∈ X}.
+      </p>
+      <p><em>Пример:</em> G = ({x1, x2, x3, x4}, {α1 = (x1, x1), α2 = (x1,x2), α3 = (x1,x3), α4 = (x2,x3), α5 = (x3,x4)})</p>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const verticesList = document.getElementById("verticesList");
+    const edgesList = document.getElementById("edgesList");
+    const edgesSvg = document.getElementById("edges");
+    const addEdgeBtn = document.getElementById("addEdgeBtn");
+
+    let vertices = [];   // {id, x, y, edges:[], el}
+    let edges = [];      // {id, from, to, line}
+    let edgeMode = false;
+    let tempVertex = null;
+
+    // Drag globals
+    let dragTarget = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    // Ensure SVG matches canvas size
+    function resizeSvg() {
+      edgesSvg.setAttribute('width', canvas.clientWidth);
+      edgesSvg.setAttribute('height', canvas.clientHeight);
+    }
+    window.addEventListener('resize', resizeSvg);
+    resizeSvg();
+
+    // click on canvas -> create vertex (unless we clicked an existing vertex)
+    canvas.addEventListener('click', (e) => {
+      if (edgeMode) return;
+      // if clicked on a vertex (or inside it), don't create a new one
+      if (e.target.closest && e.target.closest('.vertex')) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      createVertexAt(x, y);
+    });
+
+    function createVertexAt(x, y) {
+      const id = "x" + (vertices.length + 1);
+      const vertex = { id, x, y, edges: [], el: null };
+      const div = document.createElement('div');
+      div.className = 'vertex';
+      div.style.left = (x - 16) + 'px';
+      div.style.top = (y - 16) + 'px';
+      div.textContent = id;
+      canvas.appendChild(div);
+
+      vertex.el = div;
+      vertices.push(vertex);
+
+      // click on vertex -> either mark for edge or create edge
+      div.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (!edgeMode) return;
+        if (!tempVertex) {
+          tempVertex = vertex;
+          div.style.background = '#f59e0b';
+        } else {
+          if (tempVertex !== vertex) {
+            createEdge(tempVertex, vertex);
+          }
+          // reset selection color
+          document.querySelectorAll('.vertex').forEach(d => d.style.background = '#3b82f6');
+          tempVertex = null;
+          edgeMode = false;
+          updateLists();
+        }
+      });
+
+      // mousedown -> start dragging
+      div.addEventListener('mousedown', (ev) => {
+        ev.preventDefault();
+        dragTarget = vertex;
+        const divRect = div.getBoundingClientRect();
+        dragOffsetX = ev.clientX - divRect.left;
+        dragOffsetY = ev.clientY - divRect.top;
+      });
+
+      updateLists();
+    }
+
+    // global mousemove for dragging
+    document.addEventListener('mousemove', (e) => {
+      if (!dragTarget) return;
+      const canvasRect = canvas.getBoundingClientRect();
+      const newLeftAbs = e.clientX - dragOffsetX;
+      const newTopAbs = e.clientY - dragOffsetY;
+      // compute center coordinates inside canvas
+      let x = newLeftAbs - canvasRect.left + 16;
+      let y = newTopAbs - canvasRect.top + 16;
+      // clamp to canvas
+      x = Math.max(16, Math.min(canvas.clientWidth - 16, x));
+      y = Math.max(16, Math.min(canvas.clientHeight - 16, y));
+      dragTarget.x = x;
+      dragTarget.y = y;
+      dragTarget.el.style.left = (x - 16) + 'px';
+      dragTarget.el.style.top = (y - 16) + 'px';
+      // update only edges touching this vertex
+      updateEdges(dragTarget);
+    });
+
+    document.addEventListener('mouseup', () => {
+      dragTarget = null;
+    });
+
+    function createEdge(v1, v2) {
+      const edgeId = "α" + (edges.length + 1);
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", v1.x);
+      line.setAttribute("y1", v1.y);
+      line.setAttribute("x2", v2.x);
+      line.setAttribute("y2", v2.y);
+      edgesSvg.appendChild(line);
+      const edge = { id: edgeId, from: v1, to: v2, line };
+      edges.push(edge);
+      v1.edges.push(edge);
+      v2.edges.push(edge);
+      updateLists();
+    }
+
+    function updateEdges(vertex) {
+      // update all edges that reference this vertex
+      vertex.edges.forEach(e => {
+        e.line.setAttribute('x1', e.from.x);
+        e.line.setAttribute('y1', e.from.y);
+        e.line.setAttribute('x2', e.to.x);
+        e.line.setAttribute('y2', e.to.y);
+      });
+    }
+
+    function updateLists() {
+      verticesList.innerHTML = vertices.map(v => `<li>${v.id}</li>`).join("");
+      edgesList.innerHTML = edges.map(e => `<li>${e.id} = (${e.from.id}, ${e.to.id})</li>`).join("");
+    }
+
+    addEdgeBtn.onclick = () => {
+      edgeMode = true;
+      tempVertex = null;
+    };
+
+    document.getElementById("toggleDefBtn").onclick = () => {
+      const box = document.getElementById("definitionBox");
+      const btn = document.getElementById("toggleDefBtn");
+      if (box.style.display === "none") {
+        box.style.display = "block";
+        btn.textContent = "Скрыть формальное определение";
+      } else {
+        box.style.display = "none";
+        btn.textContent = "Показать формальное определение";
+      }
+    };
+  </script>
+</body>
+</html>

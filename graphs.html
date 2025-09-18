@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Графы</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      text-align: center;
+      background: #f9fafb;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      justify-items: center;
+    }
+    .card {
+    background: #2563eb;
+    color: white;
+    width: 200px;           /* фиксированная ширина */
+    aspect-ratio: 1 / 1;    /* делает квадратом */
+    text-align: center;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.2s;
+    text-decoration: none;  /* убираем подчеркивание */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;          /* внутренние отступы */
+  }
+    .card:hover {
+      background: #1e40af;
+    }
+    #backBtn {
+      margin-bottom: 20px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    #backBtn:hover {
+      background: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <button id="backBtn" onclick="location.href='index.html'">Вернуться на главную</button>
+  <h1>Графы</h1>
+  <div class="grid">
+    <a href="undirected.html" class="card">Неориентированный граф</a>
+    <a href="planarity.html" class="card">Планарность</a>
+    <a href="connectivity.html" class="card">Связность</a>
+    <a href="tree.html" class="card">Дерево</a>
+  </div>
+</body>
+</html>
